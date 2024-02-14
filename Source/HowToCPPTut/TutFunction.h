@@ -15,9 +15,9 @@ class HOWTOCPPTUT_API UTutFunction : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Level")
 		static void PlayLevel();
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, Category = "Level")
 		static void OpenLevelBlueprint();
 };
