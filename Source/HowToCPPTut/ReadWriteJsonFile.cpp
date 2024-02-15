@@ -2,6 +2,8 @@
 
 
 #include "ReadWriteJsonFile.h"
+
+#include "JsonObjectConverter.h"
 #include "ReadWriteFile.h"
 
 FDataStruct UReadWriteJsonFile::ReadStructFromJsonFile(FString JsonFilePath, bool& bOutSuccess, FString& OutInfoMessage)
@@ -12,11 +14,36 @@ FDataStruct UReadWriteJsonFile::ReadStructFromJsonFile(FString JsonFilePath, boo
 	{
 		return FDataStruct();
 	}
+
+	FDataStruct RetDataStruct;
+
+	//Try to convert generic json object to the desired structure. Output goes in RetDataStruct
+	if(!FJsonObjectConverter::JsonObjectToUStruct<FDataStruct>(JsonObject.ToSharedRef(), &RetDataStruct))
+	{
+		bOutSuccess = false;
+		OutInfoMessage = FString::Printf(TEXT("Read Struct Json Failed - Was not able to convert the json object to your desired structure. is it the right format / struct? - '%s'"), *JsonFilePath);
+		return FDataStruct();
+	}
+
+	bOutSuccess = true;
+	OutInfoMessage = FString::Printf(TEXT("Read Struct Json Succeeded - '%s'"), &JsonFilePath);
+	return RetDataStruct;
 }
 
 void UReadWriteJsonFile::WriteStructJsonFile(FString JsonFilePath, FDataStruct Struct, bool& bOutSuccess,
 	FString& OutInfoMessage)
 {
+	//Try to convert struct to generic json object
+	TSharedPtr<FJsonObject> JsonObject = FJsonObjectConverter::UStructToJsonObject(Struct);
+	if(JsonObject == nullptr)
+	{
+		bOutSuccess = false;
+		OutInfoMessage = FString::Printf(TEXT("Write Struct Json Failed - Was not able to convert the struct to a json object. This shouldn't really happen."));
+		return;
+	}
+
+	//Try to write json file
+	WriteJson(JsonFilePath, JsonObject, bOutSuccess, OutInfoMessage);
 }
 
 TSharedPtr<FJsonObject> UReadWriteJsonFile::ReadJson(FString JsonFilePath, bool& bOutSuccess, FString& OutInfoMessage)
