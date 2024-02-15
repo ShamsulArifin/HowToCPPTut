@@ -1,0 +1,67 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "ReadWriteJsonFile.h"
+#include "ReadWriteFile.h"
+
+FDataStruct UReadWriteJsonFile::ReadStructFromJsonFile(FString JsonFilePath, bool& bOutSuccess, FString& OutInfoMessage)
+{
+	//Try to read generic json object from file
+	TSharedPtr<FJsonObject> JsonObject = ReadJson(JsonFilePath, bOutSuccess, OutInfoMessage);
+	if(!bOutSuccess)
+	{
+		return FDataStruct();
+	}
+}
+
+void UReadWriteJsonFile::WriteStructJsonFile(FString JsonFilePath, FDataStruct Struct, bool& bOutSuccess,
+	FString& OutInfoMessage)
+{
+}
+
+TSharedPtr<FJsonObject> UReadWriteJsonFile::ReadJson(FString JsonFilePath, bool& bOutSuccess, FString& OutInfoMessage)
+{
+	// Try to read file
+	FString JsonString = UReadWriteFile::ReadStringFromFile(JsonFilePath, bOutSuccess, OutInfoMessage);
+	if(!bOutSuccess)
+	{
+		return nullptr;
+	}
+
+	TSharedPtr<FJsonObject> RetJsonObject;
+
+	//Try to convert string to json object, Output goes in RetJsonObject
+	if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(JsonString), RetJsonObject))
+	{
+		bOutSuccess = false;
+		OutInfoMessage = FString::Printf(TEXT("Read Json Failed - Was not able to deserialize the json string. Is it the right format? - '%s'"), *JsonString);
+		return nullptr;
+	}
+
+	bOutSuccess = true;
+	OutInfoMessage =  FString::Printf(TEXT("Read Json Succeeded - '%s'"), *JsonFilePath);
+	return RetJsonObject;
+}
+
+void UReadWriteJsonFile::WriteJson(FString JsonFilePath, TSharedPtr<FJsonObject> JsonObject, bool& bOutSuccess,FString& OutInfoMessage)
+{
+	FString JsonString;
+
+	//Try to convert json object to string. Output goes in JsonString
+	if(!FJsonSerializer::Serialize(JsonObject.ToSharedRef(), TJsonWriterFactory<>::Create(&JsonString, 0)))
+	{
+		bOutSuccess = false;
+		OutInfoMessage = FString::Printf(TEXT("Write Json Failed - Was not able to serialize the json to string. Is the JsonObject valid?"));
+		return;
+	}
+
+	//Try to write json string to file
+	UReadWriteFile::WriteStringToFile(JsonFilePath, JsonString, bOutSuccess, OutInfoMessage);
+	if(!bOutSuccess)
+	{
+		return;
+	}
+
+	bOutSuccess = true;
+	OutInfoMessage = FString::Printf(TEXT("Write json succeeded - '%s'"), *JsonFilePath);
+}
